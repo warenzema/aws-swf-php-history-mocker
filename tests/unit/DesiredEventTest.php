@@ -1,6 +1,6 @@
 <?php
 
-use swf4php\DesiredEvent;
+use SwfHistoryMocker\DesiredEvent;
 use swf4phptests\Unit\SwfUnitTestCase;
 class DesiredEventTest extends SwfUnitTestCase
 {

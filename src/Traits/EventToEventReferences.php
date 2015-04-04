@@ -1,6 +1,6 @@
 <?php
 
-namespace swf4php\Traits;
+namespace SwfHistoryMocker\traits;
 
 
 trait EventToEventReferences
