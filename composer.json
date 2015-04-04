@@ -1,4 +1,5 @@
 {
+	"name": "warenzema/aws-swf-php-history-mocker",
     "require-dev": {
         "phpunit/phpunit": "4.4.*",
          "aws/aws-sdk-php": ">=2.7.24 <3.0"
