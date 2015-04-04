@@ -1,6 +1,6 @@
 <?php
 
-namespace swf4php\EventHistoryMocker\Traits;
+namespace swf4php\src\Traits;
 
 trait ValidSwfEventTypes
 {

@@ -1,7 +1,7 @@
 <?php
 
-namespace swf4php\EventHistoryMocker;
-use swf4php\EventHistoryMocker\Traits\ValidSwfEventTypes;
+namespace swf4php\src;
+use swf4php\src\Traits\ValidSwfEventTypes;
 
 class DesiredEvent
 {

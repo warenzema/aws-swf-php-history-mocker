@@ -1,10 +1,10 @@
 <?php
 
-use swf4php\EventHistoryMocker\HistoryBuilder;
+use swf4php\src\HistoryBuilder;
 use swf4php\Tests\Unit\SwfUnitTestCase;
-use swf4php\EventHistoryMocker\DesiredEvent;
-use swf4php\EventHistoryMocker\Traits\ValidSwfEventTypes;
-use swf4php\EventHistoryMocker\Traits\EventToEventReferences;
+use swf4php\src\DesiredEvent;
+use swf4php\src\Traits\ValidSwfEventTypes;
+use swf4php\src\Traits\EventToEventReferences;
 
 class HistoryBuilderTest extends SwfUnitTestCase
 {
