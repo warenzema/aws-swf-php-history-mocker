@@ -1,9 +1,9 @@
 <?php
 
-namespace swf4php\src;
+namespace swf4php;
 
-use swf4php\src\Traits\ValidSwfEventTypes;
-use swf4php\src\Traits\EventToEventReferences;
+use swf4php\Traits\ValidSwfEventTypes;
+use swf4php\Traits\EventToEventReferences;
 class HistoryBuilder
 {
 	use ValidSwfEventTypes;

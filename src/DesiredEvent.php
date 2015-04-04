@@ -1,7 +1,7 @@
 <?php
 
-namespace swf4php\src;
-use swf4php\src\Traits\ValidSwfEventTypes;
+namespace swf4php;
+use swf4php\Traits\ValidSwfEventTypes;
 
 class DesiredEvent
 {

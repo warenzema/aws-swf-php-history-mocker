@@ -1,6 +1,6 @@
 <?php
 
-namespace swf4php\src\Traits;
+namespace swf4php\Traits;
 
 trait ValidSwfEventTypes
 {

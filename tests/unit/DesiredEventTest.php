@@ -1,7 +1,7 @@
 <?php
 
-use swf4php\src\DesiredEvent;
-use swf4php\Tests\Unit\SwfUnitTestCase;
+use swf4php\DesiredEvent;
+use swf4phptests\Unit\SwfUnitTestCase;
 class DesiredEventTest extends SwfUnitTestCase
 {
 	public function providerGetAndSetMethods()
