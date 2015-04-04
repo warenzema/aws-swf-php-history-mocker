@@ -1,6 +1,6 @@
 <?php
 
-namespace swf4phptests\Unit;
+namespace SwfHistoryMockerTests\Unit;
 
 class SwfUnitTestCase extends \PHPUnit_Framework_TestCase
 {

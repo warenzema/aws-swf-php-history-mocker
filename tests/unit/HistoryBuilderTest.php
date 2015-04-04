@@ -1,7 +1,7 @@
 <?php
 
 use SwfHistoryMocker\HistoryBuilder;
-use swf4phptests\Unit\SwfUnitTestCase;
+use SwfHistoryMockerTests\Unit\SwfUnitTestCase;
 use SwfHistoryMocker\DesiredEvent;
 use SwfHistoryMocker\traits\ValidSwfEventTypes;
 use SwfHistoryMocker\traits\EventToEventReferences;

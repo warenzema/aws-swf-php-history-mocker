@@ -1,7 +1,7 @@
 <?php
 
 use SwfHistoryMocker\DesiredEvent;
-use swf4phptests\Unit\SwfUnitTestCase;
+use SwfHistoryMockerTests\Unit\SwfUnitTestCase;
 class DesiredEventTest extends SwfUnitTestCase
 {
 	public function providerGetAndSetMethods()
