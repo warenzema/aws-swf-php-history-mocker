@@ -1,5 +1,5 @@
 <?php
-namespace SwfHistoryMockerTests\unit;
+namespace SwfHistoryMockerTests\integration;
 
 use Aws\Swf\SwfClient;
 class ContactSwfTest extends \PHPUnit_Framework_TestCase

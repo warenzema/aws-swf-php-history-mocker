@@ -195,6 +195,10 @@ class HistoryBuilder
 		$this->eventHistory[] = $event;
 	}
 	
+	/**
+	 * @return NULL|array
+	 */
+	
 	public function getLatestEvent()
 	{
 		$numEvents = count($this->eventHistory);
@@ -304,7 +308,7 @@ class HistoryBuilder
 			$latestTimestamp
 				= $this->eventHistory[$numEvents-1]['eventTimestamp'];
 			
-			$eventTimestamp = 1 + $latestTimestamp;
+			$eventTimestamp = $latestTimestamp;
 			
 			return $eventTimestamp;
 		}
@@ -708,11 +712,12 @@ class HistoryBuilder
 	
 	public function setEventHistory($value)
 	{
-		$this->eventHistory = $value;
+		$this->eventHistory = [];
 		
 		$this->resetReferenceHistory();
-		foreach ($this->eventHistory as $event) {
+		foreach ($value as $event) {
 			$this->verifyAndAddEventToReferenceHistory($event);
+			$this->eventHistory[] = $event;
 		}
 	}
 	
@@ -733,7 +738,25 @@ class HistoryBuilder
 		$this->assertContextIdIsPresentIfRequired($event);
 		$this->assertSignalNameIsPresentIfRequired($event);
 		$this->assertEventContextIdIsNotAlreadyActive($event);
+		$this->assertEventTimestampIsValid($event);
 		$this->addEventToReferenceHistory($event);
+	}
+	
+	private function assertEventTimestampIsValid($event)
+	{
+		$eventTimestamp = $event['eventTimestamp'];
+		$latestEvent = $this->getLatestEvent();
+		if (null === $latestEvent) {
+			return;
+		}
+		
+		$latestEventTimestamp = $latestEvent['eventTimestamp'];
+		if ($latestEventTimestamp>$eventTimestamp) {
+			throw new \InvalidArgumentException(
+				"Event has timestamp of $eventTimestamp which is earlier"
+				." the current latest event's timestamp of"
+				." $latestEventTimestamp.");
+		}
 	}
 	
 	private function assertTimerEventDoesNotFireTooSoon($event)

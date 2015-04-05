@@ -5,6 +5,7 @@ use SwfHistoryMockerTests\Unit\SwfUnitTestCase;
 use SwfHistoryMocker\DesiredEvent;
 use SwfHistoryMocker\traits\ValidSwfEventTypes;
 use SwfHistoryMocker\traits\EventToEventReferences;
+use SwfHistoryMocker\SwfHistoryMocker;
 
 class HistoryBuilderTest extends SwfUnitTestCase
 {
@@ -1548,6 +1549,27 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		}
 	}
 	
+	public function testEventsCannotHaveEarlierTimestamps()
+	{
+		$this->setExpectedException('\InvalidArgumentException');
+		$history = $this->returnMinimumHistoryWithEventType(
+			'ActivityTaskCompleted');
+		
+		$HistoryBuilder = new HistoryBuilder();
+		$HistoryBuilder->setEventHistory($history);
+		
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('DecisionTaskScheduled');
+		$DesiredEvent->setUnixTimestamp($unixTimestamp = 1000);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('DecisionTaskStarted');
+		//go backwards in time
+		$DesiredEvent->setUnixTimestamp($unixTimestamp-10);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+	}
+	
 	/**
 	 * @group addDesiredEvent()
 	 * @testdox addDesiredEvent()=>ex for timer w/o startToFireTimeout set
@@ -1628,11 +1650,6 @@ class HistoryBuilderTest extends SwfUnitTestCase
 			$DTCEvent['eventTimestamp']+$secondsSinceLastEvent,
 			$testedEvent['eventTimestamp']
 		);
-	}
-	
-	public function testCannotHaveTwoFirstEvents()
-	{
-		$this->markTestIncomplete();
 	}
 	
 	public function providerEventsAndAncestors()
@@ -1881,6 +1898,29 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		];
 		
 		$HistoryBuilder->setEventHistory($eventHistory);
+	}
+	
+	public function testGetLatestEventReturnsLastAddedEvent()
+	{
+		$eventType = 'DecisionTaskCompleted';
+		$history = $this
+			->returnMinimumHistoryWithEventType($eventType);
+		$HistoryBuilder = new HistoryBuilder();
+		$HistoryBuilder->setEventHistory($history);
+		
+		$latestEvent = $HistoryBuilder->getLatestEvent();
+		$this->assertInternalType('array',$latestEvent);
+		$this->assertArrayHasKey('eventType',$latestEvent);
+		$this->assertEquals($eventType,$latestEvent['eventType']);
+	}
+	
+	public function testGetLatestEventReturnsNullIfNoEvents()
+	{
+		$HistoryBuilder = new HistoryBuilder();
+		$this->assertSame(
+			null,
+			$HistoryBuilder->getLatestEvent()
+		);
 	}
 	
 	private function assertEventType($expectedEventType,$event)

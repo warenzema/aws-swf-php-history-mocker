@@ -406,9 +406,7 @@ class DesiredEventTest extends SwfUnitTestCase
 	{
 		return [
 			['WorkflowExecutionStarted',1,false],
-			['WorkflowExecutionContinuedAsNew',1,false],
 			['WorkflowExecutionStarted',null,true],
-			['WorkflowExecutionContinuedAsNew',null,true],
 		];
 	}
 	
@@ -425,6 +423,31 @@ class DesiredEventTest extends SwfUnitTestCase
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setEventType($eventType);
 		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+	}
+	
+	public function providerAllNonWorkflowStartEvents()
+	{
+		$eventTypes = $this->validEventTypes();
+		$provider = [];
+		foreach ($eventTypes as $eventType) {
+			if ('WorkflowExecutionStarted'==$eventType) {continue;}
+			$provider[] = [$eventType];
+		}
+		
+		return $provider;
+	}
+	
+	/**
+	 * @dataProvider providerAllNonWorkflowStartEvents
+	 * @param unknown $eventType
+	 */
+	
+	public function testAllEventsExceptStartedEventCanHaveSecondsSinceLast(
+		$eventType)
+	{
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType($eventType);
+		$DesiredEvent->setSecondsSinceLastEvent(1);
 	}
 	
 	/**

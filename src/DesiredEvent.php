@@ -46,10 +46,7 @@ class DesiredEvent
 		if (!$this->isValidEventType($eventType)) {
 			throw new \InvalidArgumentException();
 		} elseif (null !== $this->secondsSinceLastEvent
-			&& (
-				'WorkflowExecutionStarted'==$eventType
-				|| 'WorkflowExecutionContinuedAsNew'==$eventType
-			)
+			&& 'WorkflowExecutionStarted'==$eventType
 		) {
 			throw new \InvalidArgumentException(
 				"$eventType is not a valid choice because "
@@ -218,9 +215,7 @@ class DesiredEvent
 			|| $secondsSinceLastEvent <= 0
 		) {
 			throw new \InvalidArgumentException();
-		} elseif ('WorkflowExecutionStarted'==$this->eventType
-			|| 'WorkflowExecutionContinuedAsNew'==$this->eventType
-		) {
+		} elseif ('WorkflowExecutionStarted'==$this->eventType) {
 			throw new \InvalidArgumentException(
 				"$this->eventType cannot have a secondsSinceLastEvent"
 				." value since it is the first event in a workflow.");
