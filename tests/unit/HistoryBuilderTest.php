@@ -1635,51 +1635,79 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$this->markTestIncomplete();
 	}
 	
-	public function testCanSetSecondsSinceParentEvent()
+	public function providerEventsAndAncestors()
+	{
+		$eventTypes = $this->validEventTypes();
+		$provider = [];
+		foreach ($eventTypes as $eventType) {
+			$ancestorEventType
+				= $this->eventTypeMinimallyRequiredForEventType($eventType);
+			if (!$ancestorEventType) {continue;}
+			$provider[] = [$eventType,$ancestorEventType];
+		}
+		
+		return $provider;
+	}
+	
+	/**
+	 * @dataProvider providerEventsAndAncestors
+	 */
+	
+	public function testCanSetSecondsSinceLastAncestorEvent($eventType,
+		$ancestorEventType)
 	{
 		$secondsSinceLatestAncestor = 2.5;
+		$contextId=uniqid();
+		$signalName = uniqid();
 		
+		//prepare history for ancestor event
 		$history = $this->returnMinimumHistoryWithEventType(
-			'DecisionTaskCompleted');
+			$ancestorEventType,$contextId,$signalName);
+		//then pop off the ancester so we can add it anew
+		array_pop($history);
 		
 		$HistoryBuilder = new HistoryBuilder();
 		$HistoryBuilder->setEventHistory($history);
 		
-		$activityId=uniqid();
-		$timerId = uniqid();
 		
 		$DesiredEvent = new DesiredEvent();
-		$DesiredEvent->setEventType('ActivityTaskScheduled');
-		$DesiredEvent->setContextId($activityId);
+		$DesiredEvent->setEventType($ancestorEventType);
+		$DesiredEvent->setContextId($contextId);
+		$DesiredEvent->setSignalName($signalName);
 		$DesiredEvent->setUnixTimestamp(1000);
+		
+		$this->setDefaultRequiredAttributesForEventType($DesiredEvent);
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
 		
 		//put another event in between
 		$DesiredEvent = new DesiredEvent();
-		$DesiredEvent->setEventType('TimerStarted');
-		$DesiredEvent->setContextId($timerId);
+		$DesiredEvent->setEventType('WorkflowExecutionSignaled');
+		$DesiredEvent->setContextId(uniqid());//different contextId
 		$DesiredEvent->setUnixTimestamp(1001);
-		$this->setDefaultRequiredAttributesForEventType($DesiredEvent);
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
 		
 		//now the event we want to look at
 		$DesiredEvent = new DesiredEvent();
-		$DesiredEvent->setEventType('ActivityTaskStarted');
-		$DesiredEvent->setContextId($activityId);
+		$DesiredEvent->setEventType($eventType);
+		$DesiredEvent->setContextId($contextId);
+		$DesiredEvent->setSignalName($signalName);
+		
 		$DesiredEvent->setSecondsSinceLatestAncestor(
 			$secondsSinceLatestAncestor);
+		
+		$this->setDefaultRequiredAttributesForEventType($DesiredEvent);
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
 		
 		$eventHistory = $HistoryBuilder->getEventHistory();
 		$testedEvent = array_pop($eventHistory);
 		array_pop($eventHistory);
-		$scheduledEvent = array_pop($eventHistory);
+		$ancestorEvent = array_pop($eventHistory);
 		
-		$this->assertArrayHasKey('eventTimestamp',$scheduledEvent);
+		$this->assertArrayHasKey('eventTimestamp',$ancestorEvent);
 		
 		$this->assertArrayHasKey('eventTimestamp',$testedEvent);
 		$this->assertEquals(
-			$scheduledEvent['eventTimestamp']+$secondsSinceLatestAncestor,
+			$ancestorEvent['eventTimestamp']+$secondsSinceLatestAncestor,
 			$testedEvent['eventTimestamp']
 		);
 	}
@@ -1934,7 +1962,7 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		
 		if ($requiredEventType) {
 			$history = $this->returnMinimumHistoryWithEventType(
-				$requiredEventType);
+				$requiredEventType,$contextId,$signalName);
 		} elseif ('WorkflowExecutionStarted' != $eventType) {
 			$history = $this->returnHistoryWithOnlyFirstEvent();
 		} else {

@@ -231,10 +231,43 @@ class HistoryBuilder
 			$previousEventType
 				= $this->eventTypeMinimallyRequiredForEventType($eventType);
 			$eventHistory = $this->eventHistory;
-			if ($this->eventTypeUsesActivityId($eventType)) {
+			if ($this->eventTypeUsesActivityId($eventType)
+				&& !$this->eventTypeIsSourceOfActivityId($eventType)
+			) {
 				$previousEventId = $this
 					->getLatestEventIdForActivityIdEventType(
 						$DesiredEvent->getContextId(),$previousEventType);
+				$previousEvent = $eventHistory[$previousEventId-1];
+			} elseif ($this->eventTypeUsesTimerId($eventType)
+				&& !$this->eventTypeIsSourceOfTimerId($eventType)
+			) {
+				$previousEventId = $this
+					->getLatestEventIdForTimerIdEventType(
+						$DesiredEvent->getContextId(),$previousEventType);
+				$previousEvent = $eventHistory[$previousEventId-1];
+			} elseif ($this->eventTypeUsesWorkflowIdButNotSignalName(
+					$eventType)
+				&& !$this->eventTypeIsSourceOfWorkflowIdButNotSignalName(
+					$eventType)
+			) {
+				$previousEventId = $this
+					->getLatestEventIdForWorkflowIdEventType(
+						$DesiredEvent->getContextId(),$previousEventType);
+				$previousEvent = $eventHistory[$previousEventId-1];
+			} elseif ($this->eventTypeUsesWorkflowIdAndSignalName($eventType)
+				&& !$this->eventTypeIsSourceOfWorkflowIdAndSignalName(
+					$eventType)
+			) {
+				$previousEventId = $this
+					->getLatestEventIdForWorkflowIdAndSignalNameEventType(
+						$DesiredEvent->getContextId(),
+						$DesiredEvent->getSignalName(),
+						$previousEventType
+					);
+				$previousEvent = $eventHistory[$previousEventId-1];
+			} else {
+				$previousEventId = $this
+					->getLatestEventIdForEventType($previousEventType);
 				$previousEvent = $eventHistory[$previousEventId-1];
 			}
 			
@@ -357,6 +390,27 @@ class HistoryBuilder
 		return 'TimerStarted'==$eventType;
 	}
 	
+	private function eventTypeIsSourceOfWorkflowIdButNotSignalName($eventType)
+	{
+		switch ($eventType) {
+			case 'StartChildWorkflowExecutionInitiated':
+			case 'RequestCancelExternalWorkflowExecutionInitiated':
+				return true;
+			default:
+				return false;
+		}
+	}
+	
+	private function eventTypeIsSourceOfWorkflowIdAndSignalName($eventType)
+	{
+		switch ($eventType) {
+			case 'SignalExternalWorkflowExecutionInitiated':
+				return true;
+			default:
+				return false;
+		}
+	}
+	
 	private function eventTypeUsesWorkflowId($eventType)
 	{
 		switch ($eventType) {
@@ -374,6 +428,26 @@ class HistoryBuilder
 			case 'SignalExternalWorkflowExecutionInitiated':
 			case 'ExternalWorkflowExecutionSignaled':
 			case 'SignalExternalWorkflowExecutionFailed':
+				return true;
+			default:
+				return false;
+		}
+	}
+	
+	public function eventTypeUsesWorkflowIdButNotSignalName($eventType)
+	{
+		switch ($eventType) {
+			case 'ChildWorkflowExecutionCompleted':
+			case 'ChildWorkflowExecutionFailed':
+			case 'ChildWorkflowExecutionTimedOut':
+			case 'ChildWorkflowExecutionCanceled':
+			case 'ChildWorkflowExecutionTerminated':
+			case 'ChildWorkflowExecutionStarted':
+			case 'StartChildWorkflowExecutionFailed':
+			case 'StartChildWorkflowExecutionInitiated':
+			case 'RequestCancelExternalWorkflowExecutionInitiated':
+			case 'RequestCancelExternalWorkflowExecutionFailed':
+			case 'ExternalWorkflowExecutionCancelRequested':
 				return true;
 			default:
 				return false;
@@ -1123,5 +1197,12 @@ class HistoryBuilder
 		$eventType)
 	{
 		return $this->latestWorkflowIdEvents[$workflowId][$eventType];
+	}
+	
+	private function getLatestEventIdForWorkflowIdAndSignalNameEventType(
+		$workflowId,$signalName,$eventType)
+	{
+		return $this->latestWorkflowIdAndSignalNameEvents[$workflowId]
+			[$signalName][$eventType];
 	}
 }
