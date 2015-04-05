@@ -21,15 +21,6 @@ class HistoryBuilder
 		
 		$eventType = $DesiredEvent->getEventType();
 				
-		$eventId = count($this->eventHistory)+1;
-		
-		$eventAttributesKey = $this->getEventAttributesKey($eventType);
-		$event = [
-			'eventTimestamp'=>$this->getEventTimestamp($DesiredEvent),
-			'eventId'=>$eventId,
-			'eventType'=>$eventType,
-			$eventAttributesKey=>$DesiredEvent->getEventAttributes(),
-		];
 		
 		//check the contextId's validity
 		if ($contextId = $DesiredEvent->getContextId()) {
@@ -102,6 +93,17 @@ class HistoryBuilder
 				"$eventType requires that $requiredEventType be present"
 				." in the event history.");
 		}
+		
+		//start building the event
+		$eventId = count($this->eventHistory)+1;
+		
+		$eventAttributesKey = $this->getEventAttributesKey($eventType);
+		$event = [
+			'eventTimestamp'=>$this->getEventTimestamp($DesiredEvent),
+			'eventId'=>$eventId,
+			'eventType'=>$eventType,
+			$eventAttributesKey=>$DesiredEvent->getEventAttributes(),
+		];
 		
 		//add scheduledEventId
 		if ($scheduledEventIdReferencedEventType
@@ -179,7 +181,7 @@ class HistoryBuilder
 		
 		//use contextId to set activityId, if present
 		if ($contextId = $DesiredEvent->getContextId()) {
-			$contextKey = $this->getContextIdKeyForFirstEventType($eventType);
+			$contextKey = $this->getContextIdKeyForEventType($eventType);
 			if ($contextKey) {
 				$event[$eventAttributesKey][$contextKey]=$contextId;
 			}
@@ -187,24 +189,59 @@ class HistoryBuilder
 		if ($signalName = $DesiredEvent->getSignalName()) {
 			$event[$eventAttributesKey]['signalName']=$signalName;
 		}
-			
+		
+		if ('TimerFired'==$eventType) {
+			$this->assertTimerEventDoesNotFireTooSoon($event);
+		}
 		
 		$this->verifyAndAddEventToReferenceHistory($event);
 		
 		$this->eventHistory[] = $event;
 	}
 	
+	/**
+	 * 
+	 * @param DesiredEvent $DesiredEvent
+	 * @return number
+	 */
+	
 	private function getEventTimestamp($DesiredEvent)
 	{
-		$numEvents = count($this->eventHistory);
-		if (!$numEvents) {
-			return 1;
+		if (null !== $unixTimestamp = $DesiredEvent->getUnixTimestamp()) {
+			$eventTimestamp = $unixTimestamp;
+			return $unixTimestamp;
+		} else {
+			if ('TimerFired'==$DesiredEvent->getEventType()) {
+				$timerId = $DesiredEvent->getContextId();
+				$timerStartedEventId = $this
+					->getLatestEventIdForTimerIdEventType($timerId,
+						'TimerStarted');
+				
+				$eventHistory = $this->getEventHistory();
+				$timerStartedEvent = $eventHistory[$timerStartedEventId-1];
+				$timerStartedEventAttributeKey
+					= $this->getEventAttributesKey('TimerStarted');
+				$startToFireTimeout = $timerStartedEvent
+					[$timerStartedEventAttributeKey]['startToFireTimeout'];
+				$timerStartedEventTimestamp
+					= $timerStartedEvent['eventTimestamp'];
+				
+				$unixTimestamp = $startToFireTimeout
+					+$timerStartedEventTimestamp;
+				
+				return $unixTimestamp;
+			}
+			$numEvents = count($this->eventHistory);
+			if (!$numEvents) {
+				return 1;
+			}
+			$latestTimestamp
+				= $this->eventHistory[$numEvents-1]['eventTimestamp'];
+			
+			$eventTimestamp = 1 + $latestTimestamp;
+			
+			return $eventTimestamp;
 		}
-		$latestTimestamp = $this->eventHistory[$numEvents-1]['eventTimestamp'];
-		
-		$latestTimestamp+=1;
-		
-		return $latestTimestamp;
 	}
 	
 	private function assertRequiredAttributesAreSet($DesiredEvent)
@@ -222,20 +259,10 @@ class HistoryBuilder
 	
 	private function eventTypeRequiresContextId($eventType)
 	{
-		switch ($eventType) {
-			case 'ActivityTaskScheduled':
-			case 'TimerStarted':
-			case 'StartChildWorkflowExecutionInitiated':
-			case 'RequestCancelExternalWorkflowExecutionInitiated':
-			case 'SignalExternalWorkflowExecutionInitiated':
-				return true;
-				break;
-			default:
-				return false;
-		}
+		return (bool) $this->getContextIdKeyForEventType($eventType);
 	}
 	
-	private function getContextIdKeyForFirstEventType($eventType)
+	private function getContextIdKeyForEventType($eventType)
 	{
 		switch ($eventType) {
 			case 'ActivityTaskScheduled':
@@ -247,6 +274,10 @@ class HistoryBuilder
 				$contextKey = 'workflowId';
 				break;
 			case 'TimerStarted':
+			case 'TimerFired':
+			case 'TimerCanceled':
+			case 'StartTimerFailed';
+			case 'CancelTimerFailed':
 				$contextKey = 'timerId';
 				break;
 			default:
@@ -592,6 +623,42 @@ class HistoryBuilder
 		$this->addEventToReferenceHistory($event);
 	}
 	
+	private function assertTimerEventDoesNotFireTooSoon($event)
+	{
+		$timerFiredMinEventTimestamp
+			= $this->getMinEventTimestampForTimerFiredEvent($event);
+		
+		if ($event['eventTimestamp']<$timerFiredMinEventTimestamp) {
+			throw new \InvalidArgumentException(
+				"TimerFired event contains eventTimestamp that is less"
+				." than the sum of the TimerStarted event's eventTimestamp"
+				." and the startToFireTimeout value."
+				);
+		}
+	}
+	
+	private function getMinEventTimestampForTimerFiredEvent($event)
+	{
+		$eventType = 'TimerFired';
+		$eventAttributesKey = $this->getEventAttributesKey($eventType);
+		$timerId = $event[$eventAttributesKey]['timerId'];
+		$timerStartedEventId = $this->getLatestEventIdForTimerIdEventType(
+			$timerId,'TimerStarted');
+		
+		$eventHistory = $this->getEventHistory();
+		$timerStartedEvent = $eventHistory[$timerStartedEventId-1];
+		$timerStartedEventAttributeKey
+			= $this->getEventAttributesKey('TimerStarted');
+		$startToFireTimeout = $timerStartedEvent
+			[$timerStartedEventAttributeKey]['startToFireTimeout'];
+		$timerStartedEventTimestamp = $timerStartedEvent['eventTimestamp'];
+		
+		$timerFiredMinEventTimestamp = $startToFireTimeout
+			+$timerStartedEventTimestamp;
+		
+		return $timerFiredMinEventTimestamp;
+	}
+	
 	private function assertContextIdIsPresentIfRequired($event)
 	{
 		$eventType = $event['eventType'];
@@ -600,7 +667,7 @@ class HistoryBuilder
 		}
 		
 		$eventAttributesKey = $this->getEventAttributesKey($eventType);
-		$contextIdKey = $this->getContextIdKeyForFirstEventType($eventType);
+		$contextIdKey = $this->getContextIdKeyForEventType($eventType);
 		if (!isset($event[$eventAttributesKey])
 			|| !isset($event[$eventAttributesKey][$contextIdKey])
 		) {
