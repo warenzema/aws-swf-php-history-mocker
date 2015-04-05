@@ -1808,9 +1808,46 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
 	}
 	
-	public function testTimerFiredNeedsGreaterEqualThanStartToFire4SetHistory()
+	/**
+	 * @dataProvider providerTimestampsAndStartToFireTimeoutsAndValidOrNot
+	 */
+	
+	public function testTimerFiredNeedsGreaterEqualThanStartToFire4SetHistory(
+		$startToFireTimeout,$startUnixTimestamp,$fireUnixTimestamp,$valid)
 	{
-		$this->markTestIncomplete();
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		
+		$history = $this->returnMinimumHistoryWithEventType(
+			'DecisionTaskCompleted');
+		
+		$HistoryBuilder = new HistoryBuilder();
+		$HistoryBuilder->setEventHistory($history);
+		
+		//start timer
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('TimerStarted');
+		$DesiredEvent->setContextId($contextId=uniqid());
+		$DesiredEvent->setEventAttributes([
+			'startToFireTimeout'=>$startToFireTimeout
+		]);
+		$DesiredEvent->setUnixTimestamp($startUnixTimestamp);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		$eventHistory = $HistoryBuilder->getEventHistory();
+		
+		//end timer
+		$eventHistory[] = [
+			'eventType'=>'TimerFired',
+			'eventTimestamp'=>$fireUnixTimestamp,
+			'eventId'=>count($eventHistory)+1,
+			'timerFiredEventAttributes'=>[
+				'timerId'=>$contextId
+			]
+		];
+		
+		$HistoryBuilder->setEventHistory($eventHistory);
 	}
 	
 	private function assertEventType($expectedEventType,$event)

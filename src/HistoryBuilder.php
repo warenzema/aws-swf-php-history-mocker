@@ -99,7 +99,7 @@ class HistoryBuilder
 		
 		$eventAttributesKey = $this->getEventAttributesKey($eventType);
 		$event = [
-			'eventTimestamp'=>$this->getEventTimestamp($DesiredEvent),
+			'eventTimestamp'=>$this->getDesiredEventTimestamp($DesiredEvent),
 			'eventId'=>$eventId,
 			'eventType'=>$eventType,
 			$eventAttributesKey=>$DesiredEvent->getEventAttributes(),
@@ -190,10 +190,6 @@ class HistoryBuilder
 			$event[$eventAttributesKey]['signalName']=$signalName;
 		}
 		
-		if ('TimerFired'==$eventType) {
-			$this->assertTimerEventDoesNotFireTooSoon($event);
-		}
-		
 		$this->verifyAndAddEventToReferenceHistory($event);
 		
 		$this->eventHistory[] = $event;
@@ -215,7 +211,7 @@ class HistoryBuilder
 	 * @return number
 	 */
 	
-	private function getEventTimestamp($DesiredEvent)
+	private function getDesiredEventTimestamp($DesiredEvent)
 	{
 		if (null !== $unixTimestamp = $DesiredEvent->getUnixTimestamp()) {
 			$eventTimestamp = $unixTimestamp;
@@ -234,7 +230,6 @@ class HistoryBuilder
 			$eventType = $DesiredEvent->getEventType();
 			$previousEventType
 				= $this->eventTypeMinimallyRequiredForEventType($eventType);
-			$contextIdKey = $this->getContextIdKeyForEventType($eventType);
 			$eventHistory = $this->eventHistory;
 			if ($this->eventTypeUsesActivityId($eventType)) {
 				$previousEventId = $this
@@ -249,27 +244,26 @@ class HistoryBuilder
 				
 				return $eventTimestamp;
 			}
+		} elseif ('TimerFired'==$DesiredEvent->getEventType()) {
+			$timerId = $DesiredEvent->getContextId();
+			$timerStartedEventId = $this
+				->getLatestEventIdForTimerIdEventType($timerId,
+					'TimerStarted');
+			
+			$eventHistory = $this->getEventHistory();
+			$timerStartedEvent = $eventHistory[$timerStartedEventId-1];
+			$timerStartedEventAttributeKey
+				= $this->getEventAttributesKey('TimerStarted');
+			$startToFireTimeout = $timerStartedEvent
+				[$timerStartedEventAttributeKey]['startToFireTimeout'];
+			$timerStartedEventTimestamp
+				= $timerStartedEvent['eventTimestamp'];
+			
+			$unixTimestamp = $startToFireTimeout
+				+$timerStartedEventTimestamp;
+			
+			return $unixTimestamp;
 		} else {
-			if ('TimerFired'==$DesiredEvent->getEventType()) {
-				$timerId = $DesiredEvent->getContextId();
-				$timerStartedEventId = $this
-					->getLatestEventIdForTimerIdEventType($timerId,
-						'TimerStarted');
-				
-				$eventHistory = $this->getEventHistory();
-				$timerStartedEvent = $eventHistory[$timerStartedEventId-1];
-				$timerStartedEventAttributeKey
-					= $this->getEventAttributesKey('TimerStarted');
-				$startToFireTimeout = $timerStartedEvent
-					[$timerStartedEventAttributeKey]['startToFireTimeout'];
-				$timerStartedEventTimestamp
-					= $timerStartedEvent['eventTimestamp'];
-				
-				$unixTimestamp = $startToFireTimeout
-					+$timerStartedEventTimestamp;
-				
-				return $unixTimestamp;
-			}
 			$numEvents = count($this->eventHistory);
 			if (!$numEvents) {
 				return 1;
@@ -652,10 +646,16 @@ class HistoryBuilder
 	{
 		$this->latestEvents = array();
 		$this->latestActivityIdEvents = array();
+		$this->latestTimerIdEvents = [];
+		$this->latestWorkflowIdAndSignalNameEvents = [];
+		$this->latestWorkflowIdEvents = [];
 	}
 	
 	private function verifyAndAddEventToReferenceHistory($event)
 	{
+		if ('TimerFired'==$event['eventType']) {
+			$this->assertTimerEventDoesNotFireTooSoon($event);
+		}
 		$this->assertContextIdIsPresentIfRequired($event);
 		$this->assertSignalNameIsPresentIfRequired($event);
 		$this->assertEventContextIdIsNotAlreadyActive($event);
