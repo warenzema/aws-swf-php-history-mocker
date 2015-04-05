@@ -2,8 +2,10 @@
 
 use SwfHistoryMocker\DesiredEvent;
 use SwfHistoryMockerTests\Unit\SwfUnitTestCase;
+use SwfHistoryMocker\traits\ValidSwfEventTypes;
 class DesiredEventTest extends SwfUnitTestCase
 {
+	use ValidSwfEventTypes;
 	public function providerGetAndSetMethods()
 	{
 		return array(
@@ -429,13 +431,61 @@ class DesiredEventTest extends SwfUnitTestCase
 	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
 	 */
 	
-	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast2($eventType,$secondsSinceLastEvent,$valid)
+	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast2(
+		$eventType,$secondsSinceLastEvent,$valid)
 	{
 		if (!$valid) {
 			$this->setExpectedException('\InvalidArgumentException');
 		}
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+		$DesiredEvent->setEventType($eventType);
+	}
+	
+	public function providerEventsAndWhetherTheyHaveAncestor()
+	{
+		$allEventTypes = $this->validEventTypes();
+		
+		$provider = [];
+		foreach ($allEventTypes as $eventType) {
+			$provider[] = [
+				$eventType,1,(bool)$this
+					->eventTypeMinimallyRequiredForEventType($eventType)
+			];
+		}
+		
+		return $provider;
+	}
+	
+	/**
+	 * @dataProvider providerEventsAndWhetherTheyHaveAncestor
+	 */
+	
+	public function testExceptionIfEventTypeHasNoAncestor(
+		$eventType,$secondsSinceLatestAncestor,$valid)
+	{
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType($eventType);
+		$DesiredEvent->setSecondsSinceLatestAncestor(
+			$secondsSinceLatestAncestor);
+	}
+	
+	/**
+	 * @dataProvider providerEventsAndWhetherTheyHaveAncestor
+	 */
+	
+	public function testExceptionIfEventTypeHasNoAncestor2(
+		$eventType,$secondsSinceLatestAncestor,$valid)
+	{
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setSecondsSinceLatestAncestor(
+			$secondsSinceLatestAncestor);
 		$DesiredEvent->setEventType($eventType);
 	}
 }

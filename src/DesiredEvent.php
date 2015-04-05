@@ -54,6 +54,12 @@ class DesiredEvent
 			throw new \InvalidArgumentException(
 				"$eventType is not a valid choice because "
 				." secondsSinceLastEvent is already set.");
+		} elseif (null !== $this->secondsSinceLatestAncestor
+			&& !$this->eventTypeMinimallyRequiredForEventType($eventType)
+		) {
+			throw new \InvalidArgumentException(
+				"secondsSinceLatestAncestor is already set, yet"
+				." \"$eventType\" has no ancestors.");
 		}
 		$this->eventType = $eventType;
 	}
@@ -186,6 +192,12 @@ class DesiredEvent
 			|| $secondsSinceLatestAncestor <= 0
 		) {
 			throw new \InvalidArgumentException();
+		} elseif (null !== $this->eventType
+			&& !$this->eventTypeMinimallyRequiredForEventType($this->eventType)
+		) {
+			throw new \InvalidArgumentException(
+				"$this->eventType has no ancestors and so cannot have"
+				." secondsSinceLastAncestor set.");
 		} else {
 			$this->secondsSinceLatestAncestor = $secondsSinceLatestAncestor;
 		}
