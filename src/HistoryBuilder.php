@@ -199,6 +199,16 @@ class HistoryBuilder
 		$this->eventHistory[] = $event;
 	}
 	
+	public function getLatestEvent()
+	{
+		$numEvents = count($this->eventHistory);
+		if (!$numEvents) {
+			return null;
+		}
+		
+		return $this->eventHistory[$numEvents-1];
+	}
+	
 	/**
 	 * 
 	 * @param DesiredEvent $DesiredEvent
@@ -209,7 +219,36 @@ class HistoryBuilder
 	{
 		if (null !== $unixTimestamp = $DesiredEvent->getUnixTimestamp()) {
 			$eventTimestamp = $unixTimestamp;
-			return $unixTimestamp;
+			return $eventTimestamp;
+		} elseif (null !== $secondsSinceLastEvent
+			= $DesiredEvent->getSecondsSinceLastEvent()
+		) {
+			$latestEvent = $this->getLatestEvent();
+			$eventTimestamp = $latestEvent['eventTimestamp']
+				+ $secondsSinceLastEvent;
+			
+			return $eventTimestamp;
+		} elseif (null !== $secondsSinceLatestAncestor
+			= $DesiredEvent->getSecondsSinceLatestAncestor()
+		) {
+			$eventType = $DesiredEvent->getEventType();
+			$previousEventType
+				= $this->eventTypeMinimallyRequiredForEventType($eventType);
+			$contextIdKey = $this->getContextIdKeyForEventType($eventType);
+			$eventHistory = $this->eventHistory;
+			if ($this->eventTypeUsesActivityId($eventType)) {
+				$previousEventId = $this
+					->getLatestEventIdForActivityIdEventType(
+						$DesiredEvent->getContextId(),$previousEventType);
+				$previousEvent = $eventHistory[$previousEventId-1];
+			}
+			
+			if (!empty($previousEvent)) {
+				$eventTimestamp = $previousEvent['eventTimestamp']
+					+ $secondsSinceLatestAncestor;
+				
+				return $eventTimestamp;
+			}
 		} else {
 			if ('TimerFired'==$DesiredEvent->getEventType()) {
 				$timerId = $DesiredEvent->getContextId();

@@ -1596,6 +1596,89 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$this->assertEquals($unixTimestamp,$event['eventTimestamp']);
 	}
 	
+	public function testCanSetSecondsSinceLastEvent()
+	{
+		$secondsSinceLastEvent = 2.5;
+		$eventType = 'ActivityTaskScheduled';
+		
+		$history = $this->returnMinimumHistoryWithEventType(
+			'DecisionTaskCompleted');
+		
+		$HistoryBuilder = new HistoryBuilder();
+		$HistoryBuilder->setEventHistory($history);
+		
+		$contextId=uniqid();
+		
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType($eventType);
+		$DesiredEvent->setContextId($contextId);
+		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+		
+		$this->setDefaultRequiredAttributesForEventType($DesiredEvent);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		$eventHistory = $HistoryBuilder->getEventHistory();
+		$testedEvent = array_pop($eventHistory);
+		$DTCEvent = array_pop($eventHistory);
+		
+		$this->assertArrayHasKey('eventTimestamp',$DTCEvent);
+		
+		$this->assertArrayHasKey('eventTimestamp',$testedEvent);
+		$this->assertEquals(
+			$DTCEvent['eventTimestamp']+$secondsSinceLastEvent,
+			$testedEvent['eventTimestamp']
+		);
+	}
+	
+	public function testCanSetSecondsSinceParentEvent()
+	{
+		$secondsSinceLatestAncestor = 2.5;
+		
+		$history = $this->returnMinimumHistoryWithEventType(
+			'DecisionTaskCompleted');
+		
+		$HistoryBuilder = new HistoryBuilder();
+		$HistoryBuilder->setEventHistory($history);
+		
+		$activityId=uniqid();
+		$timerId = uniqid();
+		
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('ActivityTaskScheduled');
+		$DesiredEvent->setContextId($activityId);
+		$DesiredEvent->setUnixTimestamp(1000);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		//put another event in between
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('TimerStarted');
+		$DesiredEvent->setContextId($timerId);
+		$DesiredEvent->setUnixTimestamp(1001);
+		$this->setDefaultRequiredAttributesForEventType($DesiredEvent);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		//now the event we want to look at
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType('ActivityTaskStarted');
+		$DesiredEvent->setContextId($activityId);
+		$DesiredEvent->setSecondsSinceLatestAncestor(
+			$secondsSinceLatestAncestor);
+		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+		
+		$eventHistory = $HistoryBuilder->getEventHistory();
+		$testedEvent = array_pop($eventHistory);
+		array_pop($eventHistory);
+		$scheduledEvent = array_pop($eventHistory);
+		
+		$this->assertArrayHasKey('eventTimestamp',$scheduledEvent);
+		
+		$this->assertArrayHasKey('eventTimestamp',$testedEvent);
+		$this->assertEquals(
+			$scheduledEvent['eventTimestamp']+$secondsSinceLatestAncestor,
+			$testedEvent['eventTimestamp']
+		);
+	}
+	
 	public function providerTimerEventsAndNeedingTimerStarted()
 	{
 		return [
@@ -1610,7 +1693,7 @@ class HistoryBuilderTest extends SwfUnitTestCase
 	 * @dataProvider providerTimerEventsAndNeedingTimerStarted
 	 */
 	
-	public function testTimerFiredAndCanceledAlsoContainTimerId(
+	public function testOtherTimerEventsAlsoContainTimerId(
 		$createTimerStarted,$eventType)
 	{
 		$history = $this->returnMinimumHistoryWithEventType(
@@ -1723,6 +1806,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$DesiredEvent->setContextId($contextId);
 		$DesiredEvent->setUnixTimestamp($fireUnixTimestamp);
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
+	}
+	
+	public function testTimerFiredNeedsGreaterEqualThanStartToFire4SetHistory()
+	{
+		$this->markTestIncomplete();
 	}
 	
 	private function assertEventType($expectedEventType,$event)
