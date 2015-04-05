@@ -1630,6 +1630,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		);
 	}
 	
+	public function testCannotHaveTwoFirstEvents()
+	{
+		$this->markTestIncomplete();
+	}
+	
 	public function testCanSetSecondsSinceParentEvent()
 	{
 		$secondsSinceLatestAncestor = 2.5;

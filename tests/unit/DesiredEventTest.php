@@ -399,4 +399,43 @@ class DesiredEventTest extends SwfUnitTestCase
 		
 		$this->assertEquals($signalName,$DesiredEvent->getSignalName());
 	}
+	
+	public function providerWorkflowStarterEventsAndSecondsSinceAndValid()
+	{
+		return [
+			['WorkflowExecutionStarted',1,false],
+			['WorkflowExecutionContinuedAsNew',1,false],
+			['WorkflowExecutionStarted',null,true],
+			['WorkflowExecutionContinuedAsNew',null,true],
+		];
+	}
+	
+	/**
+	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
+	 */
+	
+	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast(
+		$eventType,$secondsSinceLastEvent,$valid)
+	{
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setEventType($eventType);
+		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+	}
+	
+	/**
+	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
+	 */
+	
+	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast2($eventType,$secondsSinceLastEvent,$valid)
+	{
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+		$DesiredEvent->setEventType($eventType);
+	}
 }
