@@ -44,7 +44,7 @@ class SampleWorkflowTest extends \PHPUnit_Framework_TestCase
 		
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setEventType('WorkflowExecutionTimedOut');
-		$DesiredEvent->setSecondsSinceLatestAncestor(30.005);
+		$DesiredEvent->setSecondsSinceLastEvent(30.006);
 		$DesiredEvent->setEventAttributes([
 			'childPolicy'=>'TERMINATE',
 			'timeoutType'=>'START_TO_CLOSE',
