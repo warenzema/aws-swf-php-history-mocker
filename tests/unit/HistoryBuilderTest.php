@@ -1549,6 +1549,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		}
 	}
 	
+	/**
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent()=>ex if eventTimestamp < prev eventTimestamp
+	 */
+	
 	public function testEventsCannotHaveEarlierTimestamps()
 	{
 		$this->setExpectedException('\InvalidArgumentException');
@@ -1589,6 +1594,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$HistoryBuilder->setEventHistory($history);
 		$HistoryBuilder->addDesiredEvent($DesiredEvent);
 	}
+	
+	/**
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent() obeys getUnixTimestamp
+	 */
 		
 	public function testCanSetUnixTimestamp()
 	{
@@ -1617,6 +1627,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$this->assertArrayHasKey('eventTimestamp',$event);
 		$this->assertEquals($unixTimestamp,$event['eventTimestamp']);
 	}
+	
+	/**
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent() obeys getSecondsSinceLastEvent
+	 */
 	
 	public function testCanSetSecondsSinceLastEvent()
 	{
@@ -1668,6 +1683,9 @@ class HistoryBuilderTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerEventsAndAncestors
+	 * 
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent() obeys getSecondsSinceLastAncestor
 	 */
 	
 	public function testCanSetSecondsSinceLastAncestorEvent($eventType,
@@ -1741,6 +1759,9 @@ class HistoryBuilderTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerTimerEventsAndNeedingTimerStarted
+	 * 
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent() all Timer events contain timerId attr
 	 */
 	
 	public function testOtherTimerEventsAlsoContainTimerId(
@@ -1775,6 +1796,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$this->assertEventAttributeEqualsExpectedValue(
 			$timerEvent, 'timerId', $contextId);
 	}
+	
+	/**
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent() timestamp for TimerFired based on StartTimer
+	 */
 	
 	public function testTimerFiredDefaultSetsEventTimestampBasedOnStartTimer()
 	{
@@ -1825,6 +1851,9 @@ class HistoryBuilderTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerTimestampsAndStartToFireTimeoutsAndValidOrNot
+	 * 
+	 * @group addDesiredEvent()
+	 * @testdox addDesiredEvent()=>ex if TimerFired timestamp<Start+startToFire
 	 */
 	
 	public function testTimerFiredRequiresGreaterThanOrEqualToStartPlusFire(
@@ -1860,6 +1889,9 @@ class HistoryBuilderTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerTimestampsAndStartToFireTimeoutsAndValidOrNot
+	 * 
+	 * @group setEventHistory()
+	 * @testdox setEventHistory()=>ex if TimerFired timestamp<Start+startToFire
 	 */
 	
 	public function testTimerFiredNeedsGreaterEqualThanStartToFire4SetHistory(
@@ -1900,6 +1932,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$HistoryBuilder->setEventHistory($eventHistory);
 	}
 	
+	/**
+	 * @group getLatestEvent()
+	 * @testdox getLatestEvent() returns latest event in AWS SWF array format
+	 */
+	
 	public function testGetLatestEventReturnsLastAddedEvent()
 	{
 		$eventType = 'DecisionTaskCompleted';
@@ -1913,6 +1950,11 @@ class HistoryBuilderTest extends SwfUnitTestCase
 		$this->assertArrayHasKey('eventType',$latestEvent);
 		$this->assertEquals($eventType,$latestEvent['eventType']);
 	}
+	
+	/**
+	 * @group getLatestEvent()
+	 * @testdox getLatestEvent() returns null if no events
+	 */
 	
 	public function testGetLatestEventReturnsNullIfNoEvents()
 	{

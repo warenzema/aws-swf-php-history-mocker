@@ -37,6 +37,11 @@ class DesiredEventTest extends SwfUnitTestCase
 		$this->assertGetReturnsSet($object, $commonMethodNamePart, $value);
 	}
 	
+	/**
+	 * @group setEventType()
+	 * @testdox setEventType()=>ex for invalid eventType
+	 */
+	
 	public function testThrowsExceptionForInvalidEventType()
 	{
 		$this->setExpectedException('\InvalidArgumentException');
@@ -44,6 +49,11 @@ class DesiredEventTest extends SwfUnitTestCase
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setEventType($eventType);
 	}
+	
+	/**
+	 * @group getEventAttributes()
+	 * @testdox getEventAttributes()==[] by default (not null)
+	 */
 	
 	public function testByDefaultEventAttributesAreAnEmptyArray()
 	{
@@ -69,6 +79,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerValidAndInvalidSecondsSince
+	 * 
+	 * @group setSecondsSinceLatestAncestor()
+	 * @testdox setSecondsSinceLatestAncestor()=>ex unless null or values > 0
 	 */
 	
 	public function testSecondsSinceLatestAncesterMustBeValidValue(
@@ -83,6 +96,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerValidAndInvalidSecondsSince
+	 * 
+	 * @group setSecondsSinceLastEvent()
+	 * @testdox setSecondsSinceLastEvent()=>ex unless null or values > 0
 	 */
 	
 	public function testSecondsSinceLatestEventMustBeValidValue($secondsSince,
@@ -112,6 +128,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerValidAndInvalidUnixTimestamps
+	 * 
+	 * @group setUnixTimestamp()
+	 * @testdox setUnixTimestamp()=>ex unless null or values > 0
 	 */
 	
 	public function testUnixTimestampMustBeValidValue($timestamp,$valid)
@@ -412,6 +431,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
+	 * 
+	 * @group setSecondsSinceLastEvent
+	 * @testdox setSecondsSinceLastEvent()=>ex for WorkflowExecutionStarted
 	 */
 	
 	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast(
@@ -423,6 +445,24 @@ class DesiredEventTest extends SwfUnitTestCase
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setEventType($eventType);
 		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+	}
+	
+	/**
+	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
+	 * 
+	 * @group setSecondsSinceLastEvent
+	 * @testdox setSecondsSinceLastEvent()=>ex for WorkflowExecutionStarted
+	 */
+	
+	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast2(
+		$eventType,$secondsSinceLastEvent,$valid)
+	{
+		if (!$valid) {
+			$this->setExpectedException('\InvalidArgumentException');
+		}
+		$DesiredEvent = new DesiredEvent();
+		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
+		$DesiredEvent->setEventType($eventType);
 	}
 	
 	public function providerAllNonWorkflowStartEvents()
@@ -439,7 +479,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerAllNonWorkflowStartEvents
-	 * @param unknown $eventType
+	 * 
+	 * @group setSecondsSinceLastEvent
+	 * @testdox setSecondsSinceLastEvent() ok for non-WorkflowExecutionStarted
 	 */
 	
 	public function testAllEventsExceptStartedEventCanHaveSecondsSinceLast(
@@ -448,21 +490,6 @@ class DesiredEventTest extends SwfUnitTestCase
 		$DesiredEvent = new DesiredEvent();
 		$DesiredEvent->setEventType($eventType);
 		$DesiredEvent->setSecondsSinceLastEvent(1);
-	}
-	
-	/**
-	 * @dataProvider providerWorkflowStarterEventsAndSecondsSinceAndValid
-	 */
-	
-	public function testExceptionIfWorkflowExecutionStartedSecondsSinceLast2(
-		$eventType,$secondsSinceLastEvent,$valid)
-	{
-		if (!$valid) {
-			$this->setExpectedException('\InvalidArgumentException');
-		}
-		$DesiredEvent = new DesiredEvent();
-		$DesiredEvent->setSecondsSinceLastEvent($secondsSinceLastEvent);
-		$DesiredEvent->setEventType($eventType);
 	}
 	
 	public function providerEventsAndWhetherTheyHaveAncestor()
@@ -482,6 +509,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerEventsAndWhetherTheyHaveAncestor
+	 * 
+	 * @group setSecondsSinceLatestAncestor
+	 * @testdox setSecondsSinceLatestAncestor()=>ex if eventType has no prereq
 	 */
 	
 	public function testExceptionIfEventTypeHasNoAncestor(
@@ -498,6 +528,9 @@ class DesiredEventTest extends SwfUnitTestCase
 	
 	/**
 	 * @dataProvider providerEventsAndWhetherTheyHaveAncestor
+	 * 
+	 * @group setSecondsSinceLatestAncestor
+	 * @testdox setSecondsSinceLatestAncestor()=>ex if eventType has no prereq
 	 */
 	
 	public function testExceptionIfEventTypeHasNoAncestor2(
